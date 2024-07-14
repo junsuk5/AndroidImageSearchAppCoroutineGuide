@@ -7,55 +7,67 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.surivalcoding.ImageSearchApp
-import com.surivalcoding.imagesearchapp.domain.repository.PhotoRepository
-import kotlinx.coroutines.Dispatchers
+import com.surivalcoding.imagesearchapp.core.Result
+import com.surivalcoding.imagesearchapp.domain.use_case.SearchError
+import com.surivalcoding.imagesearchapp.domain.use_case.SearchPhotoUseCase
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class SearchViewModel(
-    private val photoRepository: PhotoRepository
+    private val searchPhotoUseCase: SearchPhotoUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SearchUiState())
     val state = _state.asStateFlow()
 
-    private val _eventFlow = MutableSharedFlow<String>()
-    val eventFlow = _eventFlow.asSharedFlow()
+    private val _event = MutableSharedFlow<String>()
+    val event = _event.asSharedFlow()
 
     private var fetchJob: Job? = null
 
     fun fetchPhotos(query: String) {
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
-            try {
-                _state.update {
-                    it.copy(
-                        isLoading = true,
-                    )
+            println("ViewModel : ${Thread.currentThread().name}")
+
+            delay(200)
+
+            _state.update {
+                it.copy(
+                    isLoading = true,
+                )
+            }
+
+            when (val searchResult = searchPhotoUseCase.invoke(query)) {
+                is Result.Success -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            photos = searchResult.data
+                        )
+                    }
                 }
 
-                val photos = photoRepository.getPhotos(query)
+                is Result.Error -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                        )
+                    }
+                    val message = when (searchResult.error) {
+                        SearchError.EmptyQuery -> "빈 쿼리입니다"
+                        SearchError.NetworkError -> "네트워크 에러입니다"
+                        SearchError.UnknownError -> "알 수 없는 에러입니다"
+                    }
+                    _event.emit(message)
+                }
 
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        photos = photos,
-                    )
-                }
-                println("photo updated")
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                    )
-                }
-                _eventFlow.emit("네트워크 에러 : ${e.message}")
             }
         }
     }
@@ -63,9 +75,9 @@ class SearchViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val photoRepository = (this[APPLICATION_KEY] as ImageSearchApp).photoRepository
+                val application = (this[APPLICATION_KEY] as ImageSearchApp)
                 SearchViewModel(
-                    photoRepository = photoRepository,
+                    searchPhotoUseCase = application.searchUseCase,
                 )
             }
         }

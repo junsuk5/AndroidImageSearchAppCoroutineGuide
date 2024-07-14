@@ -81,11 +81,18 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // coil
     implementation(libs.coil.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    // kotlinx serialization
+    implementation(libs.kotlinx.serialization.json)
 
-    implementation("io.ktor:ktor-client-core:2.3.12")
-    implementation("io.ktor:ktor-client-cio:2.3.12")
+    // ktor client
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+
+    // retrofit
+    implementation(libs.retrofit)
+    implementation(libs.converter.moshi)
 }
