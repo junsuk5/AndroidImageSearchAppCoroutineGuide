@@ -50,17 +50,16 @@ import kotlinx.coroutines.flow.collectLatest
 fun SearchScreen(
     state: SearchUiState,
     onFetchPhotos: (String) -> Unit = {},
-    errorFlow: SharedFlow<String> = MutableSharedFlow()
+    event: SharedFlow<String> = MutableSharedFlow()
 ) {
     val snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 
     var query by remember { mutableStateOf("") }
 
     LaunchedEffect(true) {
-        errorFlow.collectLatest {
+        event.collectLatest { message ->
             snackbarHostState.showSnackbar(
-                message = "Error message",
-                actionLabel = "Retry message",
+                message = message,
                 duration = SnackbarDuration.Short,
             )
         }

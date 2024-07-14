@@ -8,15 +8,14 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.surivalcoding.ImageSearchApp
 import com.surivalcoding.imagesearchapp.domain.repository.PhotoRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class SearchViewModel(
     private val photoRepository: PhotoRepository
@@ -25,14 +24,17 @@ class SearchViewModel(
     private val _state = MutableStateFlow(SearchUiState())
     val state = _state.asStateFlow()
 
-    private val _eventFlow = MutableSharedFlow<String>()
-    val eventFlow = _eventFlow.asSharedFlow()
+    private val _event = MutableSharedFlow<String>()
+    val event = _event.asSharedFlow()
 
     private var fetchJob: Job? = null
 
     fun fetchPhotos(query: String) {
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
+
+            delay(200)
+
             try {
                 _state.update {
                     it.copy(
@@ -55,7 +57,7 @@ class SearchViewModel(
                         isLoading = false,
                     )
                 }
-                _eventFlow.emit("네트워크 에러 : ${e.message}")
+                _event.emit("네트워크 에러 : ${e.message}")
             }
         }
     }
